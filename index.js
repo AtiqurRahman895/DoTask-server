@@ -253,6 +253,36 @@ async function run() {
     }
   });
 
+  app.get("/tasks", verify, isItSecure, matchFromDB, async (req, res) => {
+    const {email} = req.headers
+    const status=req.query.status
+
+    try {
+      const result= await tasks.find({email,status}).sort({lastUpdate:-1}).toArray()
+      res.status(201).json(result);
+
+    } catch (error) {
+      console.error(`Failed to find tasks for the user with email ${email}: ${error}`);
+      res.status(500).send("Failed to find tasks.");
+    }
+  });
+
+  app.get("/tasks/:_id", verify, isItSecure, matchFromDB, async (req, res) => {
+    const {email} = req.headers
+    let _id = new ObjectId(req.params._id);
+
+    const query={_id,email}
+
+    try {
+      const result= await tasks.findOne(query)
+      res.status(200).json(result);
+
+    } catch (error) {
+      console.error(`Failed to find task with the _id: ${req.params._id}: ${error}`);
+      res.status(500).send("Failed to find task.");
+    }
+  });
+
 
 
   } finally {
