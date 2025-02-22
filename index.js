@@ -283,7 +283,31 @@ async function run() {
     }
   });
 
+  app.put("/tasks/:_id", verify, isItSecure, matchFromDB, async (req, res) => {
+    const {email} = req.headers
+    let credentials = req.body;
 
+    let _id = new ObjectId(req.params._id);
+    credentials={...credentials,lastUpdate:new Date()}
+
+    const query={_id,email}
+    const update = {
+      $set: credentials
+    };
+    const options = { upsert: false };
+
+    try {
+      const result= await tasks.updateOne(query,update,options)
+      console.log(
+        `${result.modifiedCount} task with the _id: ${req.params._id} was updated.`
+      );
+      res.status(200).send(`${result.modifiedCount} task updated.`);
+
+    } catch (error) {
+      console.error(`Failed to update task with the _id: ${req.params._id}: ${error}`);
+      res.status(500).send("Failed to update task.");
+    }
+  });
 
   } finally {
     // Ensures that the client will close when you finish/error
