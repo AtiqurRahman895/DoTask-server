@@ -236,6 +236,23 @@ async function run() {
       }
     });
 
+  // Task
+
+  app.post("/tasks", verify, isItSecure, matchFromDB, async (req, res) => {
+    let credentials = req.body;
+
+    credentials={...credentials,lastUpdate:new Date(),status:"to-do"}
+    try {
+      const review= await tasks.insertOne(credentials)
+      console.log(`A task was added with the _id: ${review.insertedId}`);
+      res.status(201).send(`Task was added`);
+
+    } catch (error) {
+      console.error(`Failed to add task: ${error}`);
+      res.status(500).send("Failed to add task.");
+    }
+  });
+
 
 
   } finally {
