@@ -309,6 +309,25 @@ async function run() {
     }
   });
 
+  app.delete("/tasks/:_id", verify, isItSecure, matchFromDB, async (req, res) => {
+    const {email} = req.headers
+    let _id = new ObjectId(req.params._id);
+
+    const query={_id,email}
+
+    try {
+      const deleteResult= await tasks.deleteOne(query)
+      console.log(
+        `${deleteResult.deletedCount} task with the _id: ${req.params._id} was deleted.`
+      );
+      res.status(200).send(`${deleteResult.deletedCount} task deleted.`);
+
+    } catch (error) {
+      console.error(`Failed to delete task with the _id: ${req.params._id}: ${error}`);
+      res.status(500).send("Failed to delete task.");
+    }
+  });
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
