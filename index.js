@@ -148,6 +148,93 @@ async function run() {
       }
     });
 
+    app.get("/users/:email",verify,isItSecure,async (req,res)=>{
+      const email=req.params.email;
+      try {
+        const result= await users.findOne({email})
+        res.status(200).json(result)
+      } catch (error) {
+        console.error(`Failed to find user: ${error}`);
+        res.status(500).send("Failed to find user.");
+      }
+    })
+
+    app.put("/users/:email",verify,isItSecure,matchFromDB,async (req,res)=>{
+      const {email} = req.headers
+      let credentials = req.body;
+  
+      const query={email}
+      const update = {
+        $set: credentials
+      };
+      const options = { upsert: false };
+  
+      try {
+        const result= await users.updateOne(query,update,options)
+        console.log(
+          `${result.modifiedCount} user with the email: ${email} was updated.`
+        );
+        res.status(200).send(`${result.modifiedCount} user updated.`);
+      } catch (error) {
+        console.error(`Failed to update user: ${error}`);
+        res.status(500).send("Failed to update user.");
+      }
+
+    })
+
+    app.put("/changeUserRole/:_id",verify,isItSecure,isAdmin,matchFromDB, (req, res) => {
+      let _id = new ObjectId(req.params._id);
+      let {role} = req.body;
+
+      const query = { _id };
+      const update={
+        $set: {role}
+      }
+      const options = { upsert: false };
+
+      users
+        .updateOne(query, update, options)
+        .then((result) => {
+          console.log(
+            `Role of a user with the _id: ${req.params._id} was Updated to ${role}.`
+          );
+          res.status(200).send(`${result.modifiedCount} user's role updated`);
+        })
+        .catch((error) => {
+          console.error(`Failed to Update user role: ${error}`);
+          res.status(500).send(`Failed to Update user role`);
+        });
+    });
+
+    app.get("/userRole-counts",verify,isItSecure,isAdmin,matchFromDB, async (req, res) => {
+      const pipeline=[
+        {
+          $group: {
+            _id: "$role", 
+            count: { $sum: 1 }, 
+          },
+        },
+        {
+            $project: {
+            count: 1,
+            role: "$_id", 
+            _id: 0, 
+
+          },
+        },
+      ]
+      try {
+        let roleCounts = await users.aggregate(pipeline).toArray()
+        const totalUsers = await users.countDocuments();
+        roleCounts =roleCounts.map(data=>{
+          return {name:data.role, value:data.count}
+        })
+        res.json({ roleCounts, totalUsers });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
 
 
